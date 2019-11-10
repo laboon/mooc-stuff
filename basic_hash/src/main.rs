@@ -17,14 +17,43 @@
 //! }
 //! ```
 //!
-//! A good hash value shj
-
+//! A good cryptographic hash has three requirements:
+//! 1. Hiding: Given H(x), it should be infeasible to find x.
+//! 2. Collision-resistant: Given x != y, it is infeasible to find H(x) == H(y).
+//! 3. Puzzle-friendly: The easiest way to calculate H(x) is to calculate it.
+//!
 //! BillHash is a hash function which accepts a string and returns a 64-bit value, its hash
 //! value.
-
+//!
 //! BillHash, like SHA-256 and many other modern hashes, uses a Merkle-Damgard transform
-//! to split up
-
+//! to repeatedly run a compression function (`c()` below) on blocks of data of a fixed
+//! length.  The previous result of this function is fed in as an argument to the new
+//! block being processed, until the end of the input, when there are no more blocks to
+//! process.
+//!
+//! Note that this means that the initial compress call needs a value to be passed into it
+//! since there was no previous block from which to calculate the value.  A standard value
+//! is passed into it for all BillHash implementations.  This standard first input value
+//! is called the initialization vector.
+//!
+//! BillHash's compression function uses a special `twiddle()` function which provides
+//! a usable, although not cryptographically secure, distribution.  It has all of the blocks
+//! XORed with all of the other blocks which are left-shifted an incrementing number of
+//! times.  See the `twiddle()` function description for details.
+//!
+//! This `twiddle()` function is called 1,024 times, scrambling the block's bits more and
+//! more - but always in a deterministic way.
+//!
+//! There is also a `finalize()` function after all of this is processed, which for BillHash
+//! will simply perform a bitwise complement on the last compress value before returning.
+//! This final value is the BillHash value of the string.
+//!
+//! ```
+//!   block1  block2   block3
+//!     |       |       |
+//!     +->     +->     +->
+//!  IV --> c() --> c() --> c() --> finalize() --> hash
+//! ```
 use std::env;
 
 /// The size of the blocks (chunks of data) our hash function
@@ -55,7 +84,7 @@ fn get_to_hash() -> String {
         args.push(argument);
     }
 
-    // ignore "0 arg", i.e. executable
+    // ignore "0 arg", i.e. the executable name itself
     let args_len = args.len() - 1;
 
     if args_len != 1 {
@@ -106,15 +135,17 @@ fn strengthen(data: Vec<u8>) -> Vec<u8> {
 /// end
 /// return iv
 /// ```
-/// Note that this is a problematic method if the input array is entirely 0's,
+/// Note that this is a problematic method if the input array is entirely 0'sE,
 /// since the shifts will only add more 0's and the XORs will never produce a
 /// positive bit, meaning that [0; 8] -> [0; 8], and further twiddling will only
 /// produce more 0s.
 ///
 /// This is unlikely to occur assuming a non-zero initialization
-/// vector is selected (1 in 8 ^ 8, or 1 in 16,777,216, chance per block).
-/// And once it gets here, it will "stall".
-/// Compare this to a good hash implementation which should have a
+/// vector is selected (1 in 256 ^ 8) chance per iteration through the block).
+/// But  once it gets here, it will "stall", always returning a 0 from that
+/// block, which means that the distribution is slightly uneven (with 0 being
+/// slightly more likely to occur than other values).
+
 fn twiddle(arr: &mut [u8; BLOCK_SIZE]) {
 
     for j in 0..BLOCK_SIZE {
@@ -230,11 +261,8 @@ fn bill_hash(to_hash: String) -> u64 {
     let mut cv: u64 = INITIALIZATION_VECTOR;
 
     for block in blocks {
-        println!("CV: {}.  Block: {:?}.", cv, block);
         cv = compress(cv, block);
     }
-
-    println!("Before F: {}.", cv);
 
     finalize(cv)
 }
