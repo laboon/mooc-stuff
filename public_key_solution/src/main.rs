@@ -1,8 +1,13 @@
 use rand::prelude::*;
 use std::env;
 
+enum Function {
+    Generate,
+    Sign,
+    Verify,
+}
 
-fn generate_key_pair(seed: u128) -> (u128, u128) {
+fn generate_key_pair(rng: rand::prelude::ThreadRng) -> (u128, u128) {
     (0, 0)
 }
 
@@ -25,39 +30,52 @@ fn print_usage_and_exit() {
 
 
 /// "Wrapper function" which returns the string to hash, getting it from the
-/// command line arguments.  It also does some simple housekeeping to ensure
-/// that a single argument was passed in, and exits if not.
+/// command line arguments.  If all arguments are good, call the correct
+/// function.
 
-fn args_good(args: Vec<String>) -> Result<String, String> {
+fn args_good(args: Vec<String>) -> Result<Function, String> {
 
-    // ignore "0 arg", i.e. the executable name itself
-    let args_len = args.len() - 1;
+    // ignore "0 arg", i.e. the executable name itself.
+    // This means that all argument lengths here are "one more" than you
+    // might expect, e.g. "./foo bar" is two arguments - "./foo" (program
+    // name) and "bar" (actual argument")
 
-    if args_len == 0 {
+    if args.len() < 2 {
         return Err("Not enough arguments".to_string());
+    } else if args.len() > 5 {
+        return Err("Too many arguments".to_string());
     }
 
     
     match args[1].as_ref() {
         "generate" => {
-            println!("g");
+            if args.len() != 2 {
+                return Err("generate takes no arguments".to_string());
+            } else {
+                return Ok(Function::Generate);
+            }
         },
         "sign" => {
-            println!("s");
+            if args.len() != 4 {
+                return Err("sign requires two arguments".to_string());
+            } else {
+                return Ok(Function::Sign);
+            }
 
         },
         "verify" => {
-            println!("v");
+            if args.len() != 5 {
+                return Err("verify requires three arguments".to_string());
+            } else {
+                return Ok(Function::Verify)                
+            }
 
         },
         _ => {
             return Err("Unrecognized first argument".to_string());
         },
     }
-    // if args[0] == "
-    
-    // args[1].clone()
-    Ok("meow".to_string())
+
 }
 
 
@@ -70,9 +88,21 @@ fn main() {
 
     let args_ok = args_good(args);
     match args_ok {
-        Ok(_) => {
-            let a = rand::random::<u128>();
-            println!("{:#034x}", a);
+        Ok(f) => {
+            match f {
+                Function::Generate => {
+                    let mut rng = rand::thread_rng();
+                    generate_key_pair(rng);
+                },
+                Function::Sign => {
+                    // sign_message(args[2], args[3]);
+                },
+                Function::Verify => {
+                    // verify_signature(args[2], args[3], args[4]);
+                },
+            }
+            // let a = rand::random::<u128>();
+            // println!("{:#034x}", a);
         },
         Err(e) => {
             println!("Error: {}", e);

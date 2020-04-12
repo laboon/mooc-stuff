@@ -1,0 +1,80 @@
+MOOC MONDAYS: the Web3 Foundation “Blockchain for Beginners” course
+
+Introduction –the Web3 Foundation is launching a new educational series starting on March xxx and we’re going to hear about it from you.
+
+First, let’s hear a little bit about you. (Your background - academic, but also how you became interested in technology)
+
+> Pitt, Bitcoin, Ethereum... idea of a multi-chain world.  Wrote book and taught course at the University of Pittsburgh.
+
+How did you end up coming to the Web3 Foundation?
+
+> interested in leaving academia and doing real work in blockchain, and especially in a multi-chain world. I saw a video of Gavin Wood's talk on Substrate at Web3 Summit 2018 ( https://www.parity.io/launch-a-blockchain-in-minutes-substrate/ ) and separately, had just been in Switzerland, where the Web3 Foundation is based.  After finding out that they needed a technical educator, I just had to convince my wife we should look at moving to Switzerland.  I didn't need to do a lot of convincing!
+
+So, what does this new educational course/MOOC entail?
+
+> Blockchain from the very foundations - like understanding how a hash function works, consensus algorithms, what proof of work is - all the way up to what kinds of applications people are using the blockchain for today.
+
+What inspired you to write a MOOC? (Here, we could include the cutting-edge education meets cutting-edge tech viewpoint, either as a brief sentence or expanding a bit on how MOOCs are part of the education of the future – filling the gap as “real-life” tech/job demands change quicker than university systems)
+
+> There seem to be two kinds of courses out there, the very deep technical ones and the bare-bones "here's how to write some Solidity to make a dapp".  I wanted to bridge these, letting people understand blockchain at a deep level as well as get the skills to actually start building.
+
+How long is it?
+
+> 20 weeks
+
+What does it cost? (This should probably be mentioned in the introduction, but it could be re-emphasized here that it’s completely free/if there are any costs involved)
+
+> Completely, entirely, 100% free.
+
+Who is the course for/target audience?
+
+·         Do you have to be a developer?
+
+·         Do you need to know anything about blockchain beforehand?
+
+·         Do you need basic knowledge of tech?
+
+·         Why does this have advantages over other MOOCs for beginners? [cutting edge tech company]
+
+> Assumes some basic technical and coding knowledge, but assumes you know nothing about blockchain.
+
+How much time would people need to set aside to study every week?
+
+> This is really up to the student.  One could just watch the lectures - which are about 30 - 45 minutes apiece - and get a good, high-level understanding.  You can dive deeper and do the exercises which are meant to take a few hours to complete.
+
+What happens if they don’t get everything finished that week?
+
+> There's no time limit.
+
+Does it have to be completed in a certain period of time?
+
+> No, always available.
+
+Ultimately, what do you hope people will get from this course?
+
+> A deeper understanding of how blockchains work... and thus, perhaps more importantly, a better idea of what they can be used for.  People can make more interesting things when they know how they work.
+
+Will it be graded?
+
+> No, not at all.  There will be a forum or chatroom where you can discuss problems with others.
+
+Will there be an exam/certification at the end?
+
+Is there a chance to upgrade the cert?
+
+> Not at the moment.   We are considering adding one later.
+
+
+(Will this be a stand-alone course or do you plan more follow up courses once people have completed this?)
+
+> We'll see!
+
+It would be nice to mention your novel somewhere too – does that work for you? Perhaps here, that for people who aren’t ready to sign up right now they can dip into the world of blockchain with your novel…you could give a brief outline of the plot.
+
+> Sure. Near future, at the University of Pittsburgh, an English Literature student discovers that a professor used to live in her house and may have hid the key to 5 bitcoin there.  She, her math major roommate and her computer science friend from high school try to track down the bitcoin, along the way teaching her (and the reade) how blockchain works.
+
+Conclusion : Recap – Free MOOC, a new class will be released every Mon at 5pm CET for the next 20 weeks, starting xxxx.
+
+Sign up now at xxx
+
+
