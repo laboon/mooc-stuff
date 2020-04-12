@@ -1,8 +1,14 @@
+extern crate crypto;
+
+
 use rand::prelude::*;
 use std::env;
 use std::process::*;
 use num::integer::*;
 use modinverse::modinverse;
+
+use self::crypto::digest::Digest;
+use self::crypto::sha2::Sha256;
 
 // Our two keys can not be higher than this value
 // This makes cracking the code relatively simple, but frees us
@@ -128,7 +134,6 @@ fn mod_inv(a: isize, module: isize) -> isize {
 
 fn mmi(a_unsigned: u32, m_unsigned: u32) -> u32 {
 
-
     let a: i64 = a_unsigned as i64;
     let m: i64 = m_unsigned as i64;
     
@@ -147,19 +152,8 @@ fn mmi(a_unsigned: u32, m_unsigned: u32) -> u32 {
     if xy.0 > 0 {
         return xy.0 as u32;
     } else {
-        panic!("Received negative");
+        panic!("Received negative inverse");
     }
-
-        
-    // println!("mmi");
-    // println!("a: {}, b: {}", a, b);
-    
-    // let inverse = modinverse(a, b);
-    
-    // match inverse {
-    //     Some(x) => return x as u32,
-    //     None => panic!("There should always be a multiplicative inverse"),
-    // }
 }
 
 fn choose_private_exponent(c: u32, mut rng: &mut rand::prelude::ThreadRng) -> u32 {
@@ -195,8 +189,6 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     
     // Step 4: Choose some e which is coprime to n and 1 < e < n
     let e = choose_private_exponent(n, &mut rng);
-
-    println!("p: {}, q: {}, n: {}, e: {}", p, q, n, e);
     
     // Step 5: Compute the modular multiplicative inverse for d
     let d = compute_public_exponent(e, n);
@@ -215,10 +207,24 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     (n, d, e)
 }
 
+fn hash(msg: String) -> u32 {
+
+}
+    
+
 fn sign_message(msg: String, priv_key: u32) -> u32 {
     // TODO
 
     // Step 1: Produce a hash value of the message.
+// create a Sha256 object
+let mut hasher = Sha256::new();
+
+// write input message
+hasher.input_str("hello world");
+
+// read hash digest
+let hex = hasher.result_str();
+    
 
     // Step 2: Raise it to the power of d, modulo n.
 
@@ -241,8 +247,8 @@ fn verify_signature(msg: String, sig: String, pub_key: u32) -> bool {
 fn print_usage_and_exit() {
     println!("Usage:");
     println!("generate - generates a public/private keypair");
-    println!("sign <msg> <private_key> - signs a message with private key");
-    println!("verify <msg> <signature> <public_key> - verifies a message");
+    println!("sign <msg> <priv_key_mod> <priv_key_exp>- signs a message with private key");
+    println!("verify <msg> <signature> <pub_key_mod> <pub_key_exp> - verifies a message");
     std::process::exit(1);
 }
 
@@ -261,7 +267,7 @@ fn args_good(args: Vec<String>) -> Result<Function, String> {
 
     if args.len() < 2 {
         return Err("Not enough arguments".to_string());
-    } else if args.len() > 5 {
+    } else if args.len() > 6 {
         return Err("Too many arguments".to_string());
     }
 
@@ -275,16 +281,16 @@ fn args_good(args: Vec<String>) -> Result<Function, String> {
             }
         },
         "sign" => {
-            if args.len() != 4 {
-                return Err("sign requires two arguments".to_string());
+            if args.len() != 5 {
+                return Err("sign requires three arguments".to_string());
             } else {
                 return Ok(Function::Sign);
             }
 
         },
         "verify" => {
-            if args.len() != 5 {
-                return Err("verify requires three arguments".to_string());
+            if args.len() != 6 {
+                return Err("verify requires four arguments".to_string());
             } else {
                 return Ok(Function::Verify)                
             }
@@ -298,9 +304,8 @@ fn args_good(args: Vec<String>) -> Result<Function, String> {
 }
 
 fn print_keys(n: u32, d: u32, e: u32) {
-    println!("Modulus (n): {}", n);
-    println!("Private key (d): {}", d);
-    println!("Public key (e): {}", e);
+    println!("Private key: {}, {}", n, d);
+    println!("Public key: {}, {}", n, e);
 }
 
 
@@ -321,10 +326,10 @@ fn main() {
                     print_keys(n, d, e);
                 },
                 Function::Sign => {
-                    // sign_message(args[2], args[3]);
+                    sign_message(args[2], args[3], args[4]);
                 },
                 Function::Verify => {
-                    // verify_signature(args[2], args[3], args[4]);
+                    // verify_signature(args[2], args[3], args[4], args[5]);
                 },
             }
             // let a = rand::random::<u32>();
