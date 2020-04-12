@@ -207,23 +207,23 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     (n, d, e)
 }
 
-fn hash(msg: String) -> u32 {
+// fn hash(msg: String) -> u32 {
 
-}
+// }
     
 
-fn sign_message(msg: String, priv_key: u32) -> u32 {
+fn sign_message(msg: String, priv_key_mod: u32, priv_key_exp: u32) -> u32 {
     // TODO
 
     // Step 1: Produce a hash value of the message.
 // create a Sha256 object
-let mut hasher = Sha256::new();
+// let mut hasher = Sha256::new();
 
-// write input message
-hasher.input_str("hello world");
+// // write input message
+// hasher.input_str("hello world");
 
-// read hash digest
-let hex = hasher.result_str();
+// // read hash digest
+// let hex = hasher.result_str();
     
 
     // Step 2: Raise it to the power of d, modulo n.
@@ -231,7 +231,7 @@ let hex = hasher.result_str();
     1
 }
 
-fn verify_signature(msg: String, sig: String, pub_key: u32) -> bool {
+fn verify_signature(msg: String, sig: String, pub_key_mod: u32, pub_key_exp: u32) -> bool {
 
     // Step 1: Get the hash value of the message.
 
@@ -326,7 +326,7 @@ fn main() {
                     print_keys(n, d, e);
                 },
                 Function::Sign => {
-                    sign_message(args[2], args[3], args[4]);
+                    // sign_message(args[2], args[3], args[4]);
                 },
                 Function::Verify => {
                     // verify_signature(args[2], args[3], args[4], args[5]);
