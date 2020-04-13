@@ -15,8 +15,6 @@ use modpow::*;
 use num::bigint::*;
 
 // Our two keys can not be higher than this value
-// This makes cracking the code relatively simple, but frees us
-// from having to use bigint everywhere for multiplication!
 const MAX_KEY_VAL: usize = 65_536;
 
 // The different functions supported by the program -
@@ -39,7 +37,8 @@ enum Function {
 /// division primality test described here:
 /// https://en.wikipedia.org/wiki/Primality_test#Simple_methods.
 
-fn is_prime(n: BigInt) -> bool {
+fn is_prime(n: &BigInt) -> bool {
+    
     if n <= 3.to_bigint().unwrap() {
         return n > 1.to_bigint().unwrap();
     } else if n % 2.to_bigint().unwrap() == 0.to_bigint().unwrap()
@@ -80,7 +79,7 @@ fn get_random_prime(rng: &mut rand::prelude::ThreadRng) -> BigInt {
         
         p = rng.gen_bigint(MAX_KEY_VAL);
 
-        if is_prime(p) {
+        if is_prime(&p) {
             break;
         }
 
@@ -91,18 +90,18 @@ fn get_random_prime(rng: &mut rand::prelude::ThreadRng) -> BigInt {
 
 }
 
-fn is_coprime(x: BigInt, y: BigInt) -> bool {
-    num::integer::gcd(x, y) == 1.to_bigint().unwrap()
+fn is_coprime(x: &BigInt, y: &BigInt) -> bool {
+    x.gcd(&y) == 1.to_bigint().unwrap()
 }
 
-fn carmichael_totient(x: BigInt, y: BigInt) -> BigInt {
-    num::integer::lcm(x - 1, y - 1)
+fn carmichael_totient(x: &BigInt, y: &BigInt) -> BigInt {
+    (x - 1.to_bigint().unwrap()).lcm(&(y - 1.to_bigint().unwrap()))
 }
 
 
 // WORK STARTS HERE
 
-fn generate_two_primes(mut rng: &mut rand::prelude::ThreadRng) -> (BigInt, BigInt) {
+fn generate_two_primes(mut rng: &mut rand::prelude::ThreadRng) -> (&BigInt, &BigInt) {
     let mut p;
     let mut q;
     // Generally this loop should not execute more than once, but on the
@@ -116,7 +115,7 @@ fn generate_two_primes(mut rng: &mut rand::prelude::ThreadRng) -> (BigInt, BigIn
         }
     }
 
-    (p, q)
+    (&p, &q)
 }
 
 
@@ -151,7 +150,7 @@ fn choose_private_exponent(c: &BigInt, rng: &mut rand::prelude::ThreadRng) -> Bi
     
     loop {
         p = rng.gen_bigint_range(&2.to_bigint().unwrap(), &c);
-        if is_coprime(p, c) {
+        if is_coprime(&p, &c) {
             break;
         }
     }
@@ -315,23 +314,23 @@ fn main() {
                     print_keys(n, d, e);
                 },
                 Function::Sign => {
-                    let msg: String = args[2].clone();
-                    let priv_key_mod = args[3].parse::<BigInt>().unwrap();
-                    let priv_key_exp = args[4].parse::<BigInt>().unwrap();
-                    let sig = sign_message(msg, priv_key_mod, priv_key_exp);
-                    println!("Signature: {}", sig);
+                    // let msg: String = args[2].clone();
+                    // let priv_key_mod = args[3].parse::<BigInt>().unwrap();
+                    // let priv_key_exp = args[4].parse::<BigInt>().unwrap();
+                    // let sig = sign_message(msg, priv_key_mod, priv_key_exp);
+                    // println!("Signature: {}", sig);
                 },
                 Function::Verify => {
-                    let msg: String = args[2].clone();
-                    let sig = args[3].parse::<BigInt>().unwrap();
-                    let pub_key_mod = args[4].parse::<BigInt>().unwrap();
-                    let pub_key_exp = args[5].parse::<BigInt>().unwrap();
+                    // let msg: String = args[2].clone();
+                    // let sig = args[3].parse::<BigInt>().unwrap();
+                    // let pub_key_mod = args[4].parse::<BigInt>().unwrap();
+                    // let pub_key_exp = args[5].parse::<BigInt>().unwrap();
 
-                    let r = verify_signature(msg, sig, pub_key_mod, pub_key_exp);
-                    match r {
-                        true => { println!("Signature verified!"); }
-                        false => { println!("SIGNATURE INVALID!"); }
-                    }
+                    // let r = verify_signature(msg, sig, pub_key_mod, pub_key_exp);
+                    // match r {
+                    //     true => { println!("Signature verified!"); }
+                    //     false => { println!("SIGNATURE INVALID!"); }
+                    // }
                 },
             }
         },
