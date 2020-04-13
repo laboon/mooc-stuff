@@ -6,6 +6,10 @@ use std::env;
 use std::process::*;
 use num::integer::*;
 use modinverse::modinverse;
+use modpow::*;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 
 use self::crypto::digest::Digest;
 use self::crypto::sha2::Sha256;
@@ -134,6 +138,8 @@ fn mod_inv(a: isize, module: isize) -> isize {
 
 fn mmi(a_unsigned: u32, m_unsigned: u32) -> u32 {
 
+    // Generally, we have been using unsigned integers but we
+    // need signed for this algorithm.
     let a: i64 = a_unsigned as i64;
     let m: i64 = m_unsigned as i64;
     
@@ -174,6 +180,43 @@ fn choose_private_exponent(c: u32, mut rng: &mut rand::prelude::ThreadRng) -> u3
 fn compute_public_exponent(e: u32, n: u32) -> u32 {
     mmi(e, n)
 }
+
+fn get_hash<T: Hash>(t: &T) -> u32 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    let r = s.finish();
+    r as u32
+}
+
+
+fn sign_message(msg: String, priv_key_mod: BigInt, priv_key_exp: BigInt) -> BigInt {
+    // TODO
+
+    // Step 1: Produce a hash value of the message.
+    let h = get_hash(&msg);
+    
+    // Step 2: Raise it to the power of d, modulo n.
+    let r  = modpow(&h, &priv_key_exp, &priv_key_mod);
+
+    r
+    
+}
+
+fn verify_signature(msg: String, sig: BigInt, pub_key_mod: BigInt, pub_key_exp: BigInt) -> bool {
+
+    // Step 1: Get the hash value of the message.
+    let h = get_hash(&msg);
+  
+    // Step 2: Raise it to the power of e modulo n.
+    let r  = modpow(&h, &pub_key_exp, &pub_key_mod);
+
+    // Step 3: Compare the computed value in step 2 to the original hash
+    //         calculated in Step 1.  If they match, the signature is valid.
+    //         If not, it is invalid
+    
+    r == h
+}
+
 
 fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) {
     // TODO
