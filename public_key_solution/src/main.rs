@@ -180,8 +180,8 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     // Step 1: Choose two distinct prime numbers, p and q
     let (p, q) = generate_two_primes(&mut rng);
 
-    // Step 2: Compute t = p * q
-    let t = p * q;
+    // Step 2: Compute m = p * q (will be the modulus)
+    let m = p * q;
 
     // Step 3: Compute n = Carmichael's totient function of p, q
     //         Carmichael's Totient is simply lcm(p - 1, q - 1)
@@ -201,10 +201,10 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     // }
     
     // Return a three-tuple with the following elements:
-    // 1. Modulus (n)
+    // 1. Modulus (m)
     // 2. Private Exponent (d)
     // 3. Public Exponent (e)
-    (n, d, e)
+    (m, d, e)
 }
 
 // fn hash(msg: String) -> u32 {
