@@ -2,15 +2,10 @@ extern crate num_bigint;
 extern crate num_traits;
 
 use num_bigint::BigUint;
-use std::mem::replace;
 use num_traits::cast::ToPrimitive;
 
 use rand::prelude::*;
 use std::env;
-use std::process::*;
-use num::integer::*;
-use modinverse::modinverse;
-use modpow::*;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -101,8 +96,8 @@ fn carmichael_totient(x: u32, y: u32) -> u32 {
 // WORK STARTS HERE
 
 fn generate_two_primes(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32) {
-    let mut p = 0;
-    let mut q = 0;
+    let mut p;
+    let mut q;
     // Generally this loop should not execute more than once, but on the
     // off chance that we generate the same prime twice, we loop until
     // they are distinct.
@@ -147,9 +142,9 @@ fn mmi(a_unsigned: u32, m_unsigned: u32) -> u32 {
     }
 }
 
-fn choose_private_exponent(c: u32, mut rng: &mut rand::prelude::ThreadRng) -> u32 {
+fn choose_private_exponent(c: u32, rng: &mut rand::prelude::ThreadRng) -> u32 {
 
-    let mut p = 0;
+    let mut p;
     
     loop {
         p = rng.gen_range(2, c);
@@ -216,9 +211,7 @@ fn verify_signature(msg: String, sig: u32, pub_key_mod: u32, pub_key_exp: u32) -
 fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) {
     // TODO
     // Step 1: Choose two distinct prime numbers, p and q
-    // let (p, q) = generate_two_primes(&mut rng);
-    let p = 787;
-    let q = 797;
+    let (p, q) = generate_two_primes(&mut rng);
     
     // Step 2: Compute m = p * q (will be the modulus)
     let m = p * q;
