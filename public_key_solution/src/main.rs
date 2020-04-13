@@ -1,19 +1,23 @@
-extern crate crypto;
+extern crate num_bigint;
 
+use num::bigint::BigInt;
+use num::bigint::{ToBigInt, RandBigInt};
+use num::FromPrimitive;
 
 use rand::prelude::*;
 use std::env;
 use std::process::*;
 use num::integer::*;
 use modinverse::modinverse;
-
-use self::crypto::digest::Digest;
-use self::crypto::sha2::Sha256;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use modpow::*;
+use num::bigint::*;
 
 // Our two keys can not be higher than this value
 // This makes cracking the code relatively simple, but frees us
 // from having to use bigint everywhere for multiplication!
-const MAX_KEY_VAL: u32 = 65_536;
+const MAX_KEY_VAL: usize = 65_536;
 
 // The different functions supported by the program -
 // 1. Generate a keypair
@@ -35,24 +39,27 @@ enum Function {
 /// division primality test described here:
 /// https://en.wikipedia.org/wiki/Primality_test#Simple_methods.
 
-fn is_prime(n: u32) -> bool {
-    if n <= 3 {
-        return n > 1;
-    } else if n % 2 == 0 || n % 3 == 0 {
+fn is_prime(n: BigInt) -> bool {
+    if n <= 3.to_bigint().unwrap() {
+        return n > 1.to_bigint().unwrap();
+    } else if n % 2.to_bigint().unwrap() == 0.to_bigint().unwrap()
+        || n % 3.to_bigint().unwrap() == 0.to_bigint().unwrap() {
+            
         return false;
     }
 
-    let mut i = 5;
+    let mut i = 5.to_bigint().unwrap();
 
-    while (i * i <= n) {
-        if n % i == 0 || n % (i + 2) == 0 {
+    while i * i <= n {
+        if n % i == 0.to_bigint().unwrap()
+            || n % (i + 2.to_bigint().unwrap()) == 0.to_bigint().unwrap() {
             return false;
         }
-        i = i + 6;
+        i = i + 6.to_bigint().unwrap();
     }
-                
+    
     return true;
-        
+    
 }
 
 /// This function will return a random prime.
@@ -60,10 +67,9 @@ fn is_prime(n: u32) -> bool {
 /// prime.  There are definitely more efficient algorithms for this,
 /// but this is meant to be as simple as possible.
 
-fn get_random_prime(rng: &mut rand::prelude::ThreadRng) -> u32 {
+fn get_random_prime(rng: &mut rand::prelude::ThreadRng) -> BigInt {
 
-    // Generate a random 16-bit unsigned integer.
-    let mut p: u32 = 0; 
+    let mut p;
 
     // Keep generating random numbers and putting them in `p` until
     // the generated number is found to be prime.
@@ -72,7 +78,7 @@ fn get_random_prime(rng: &mut rand::prelude::ThreadRng) -> u32 {
     // language.
     loop {
         
-        p = rng.gen_range(3, MAX_KEY_VAL);
+        p = rng.gen_bigint(MAX_KEY_VAL);
 
         if is_prime(p) {
             break;
@@ -85,20 +91,20 @@ fn get_random_prime(rng: &mut rand::prelude::ThreadRng) -> u32 {
 
 }
 
-fn is_coprime(x: u32, y: u32) -> bool {
-    num::integer::gcd(x, y) == 1
+fn is_coprime(x: BigInt, y: BigInt) -> bool {
+    num::integer::gcd(x, y) == 1.to_bigint().unwrap()
 }
 
-fn carmichael_totient(x: u32, y: u32) -> u32 {
+fn carmichael_totient(x: BigInt, y: BigInt) -> BigInt {
     num::integer::lcm(x - 1, y - 1)
 }
 
 
 // WORK STARTS HERE
 
-fn generate_two_primes(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32) {
-    let mut p = 0;
-    let mut q = 0;
+fn generate_two_primes(mut rng: &mut rand::prelude::ThreadRng) -> (BigInt, BigInt) {
+    let mut p;
+    let mut q;
     // Generally this loop should not execute more than once, but on the
     // off chance that we generate the same prime twice, we loop until
     // they are distinct.
@@ -114,54 +120,37 @@ fn generate_two_primes(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32) {
 }
 
 
-fn mod_inv(a: isize, module: isize) -> isize {
-  let mut mn = (module, a);
-  let mut xy = (0, 1);
- 
-  while mn.1 != 0 {
-    xy = (xy.1, xy.0 - (mn.0 / mn.1) * xy.1);
-    mn = (mn.1, mn.0 % mn.1);
-  }
- 
-  while xy.0 < 0 {
-    xy.0 += module;
-  }
-  xy.0
-}
-
 // Modular multiplicative inverse code based on Rosetta Code's MMI code:
 // https://rosettacode.org/wiki/Modular_inverse#Rust
 
-fn mmi(a_unsigned: u32, m_unsigned: u32) -> u32 {
+fn mmi(a: &BigInt, m: &BigInt) -> BigInt {
 
-    let a: i64 = a_unsigned as i64;
-    let m: i64 = m_unsigned as i64;
+    let mut mn = (*m, *a);
+    let mut xy = (0.to_bigint().unwrap(), 1.to_bigint().unwrap());
     
-    let mut mn = (m, a);
-    let mut xy = (0, 1);
-    
-    while mn.1 != 0 {
+    while mn.1 != 0.to_bigint().unwrap() {
         xy = (xy.1, xy.0 - (mn.0 / mn.1) * xy.1);
         mn = (mn.1, mn.0 % mn.1);
     }
     
-    while xy.0 < 0 {
+    while xy.0 < 0.to_bigint().unwrap() {
         xy.0 += m;
     }
 
-    if xy.0 > 0 {
-        return xy.0 as u32;
+    if xy.0 > 0.to_bigint().unwrap() {
+        return xy.0;
     } else {
         panic!("Received negative inverse");
     }
 }
 
-fn choose_private_exponent(c: u32, mut rng: &mut rand::prelude::ThreadRng) -> u32 {
 
-    let mut p = 0;
+fn choose_private_exponent(c: &BigInt, rng: &mut rand::prelude::ThreadRng) -> BigInt {
+
+    let mut p;
     
     loop {
-        p = rng.gen_range(2, c);
+        p = rng.gen_bigint_range(&2.to_bigint().unwrap(), &c);
         if is_coprime(p, c) {
             break;
         }
@@ -171,27 +160,27 @@ fn choose_private_exponent(c: u32, mut rng: &mut rand::prelude::ThreadRng) -> u3
 
 }
 
-fn compute_public_exponent(e: u32, n: u32) -> u32 {
+fn compute_public_exponent(e: &BigInt, n: &BigInt) -> BigInt {
     mmi(e, n)
 }
 
-fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) {
+fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (BigInt, BigInt, BigInt) {
     // TODO
     // Step 1: Choose two distinct prime numbers, p and q
     let (p, q) = generate_two_primes(&mut rng);
 
-    // Step 2: Compute t = p * q
-    let t = p * q;
+    // Step 2: Compute m = p * q - this will be the modulus
+    let m = p * q;
 
     // Step 3: Compute n = Carmichael's totient function of p, q
     //         Carmichael's Totient is simply lcm(p - 1, q - 1)
-    let n = carmichael_totient(p, q);
+    let n = carmichael_totient(&p, &q);
     
     // Step 4: Choose some e which is coprime to n and 1 < e < n
-    let e = choose_private_exponent(n, &mut rng);
+    let e = choose_private_exponent(&n, &mut rng);
     
     // Step 5: Compute the modular multiplicative inverse for d
-    let d = compute_public_exponent(e, n);
+    let d = compute_public_exponent(&e, &n);
 
     // Step 6: Perform a sanity check before returning.
     //         Verify that d * e = 1 modulo n.
@@ -201,46 +190,46 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     // }
     
     // Return a three-tuple with the following elements:
-    // 1. Modulus (n)
+    // 1. Modulus (m)
     // 2. Private Exponent (d)
     // 3. Public Exponent (e)
-    (n, d, e)
+    (m, d, e)
 }
 
-// fn hash(msg: String) -> u32 {
+fn get_hash<T: Hash>(t: &T) -> BigInt {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    let r = s.finish();
+    BigInt::from_u64(r).unwrap()
+}
 
-// }
-    
 
-fn sign_message(msg: String, priv_key_mod: u32, priv_key_exp: u32) -> u32 {
+fn sign_message(msg: String, priv_key_mod: BigInt, priv_key_exp: BigInt) -> BigInt {
     // TODO
 
     // Step 1: Produce a hash value of the message.
-// create a Sha256 object
-// let mut hasher = Sha256::new();
-
-// // write input message
-// hasher.input_str("hello world");
-
-// // read hash digest
-// let hex = hasher.result_str();
+    let h = get_hash(&msg);
     
-
     // Step 2: Raise it to the power of d, modulo n.
+    let r  = modpow(&h, &priv_key_exp, &priv_key_mod);
 
-    1
+    r
+    
 }
 
-fn verify_signature(msg: String, sig: String, pub_key_mod: u32, pub_key_exp: u32) -> bool {
+fn verify_signature(msg: String, sig: BigInt, pub_key_mod: BigInt, pub_key_exp: BigInt) -> bool {
 
     // Step 1: Get the hash value of the message.
-
+    let h = get_hash(&msg);
+  
     // Step 2: Raise it to the power of e modulo n.
+    let r  = modpow(&h, &pub_key_exp, &pub_key_mod);
 
     // Step 3: Compare the computed value in step 2 to the original hash
     //         calculated in Step 1.  If they match, the signature is valid.
-    //         If not, it is invalid.
-    false
+    //         If not, it is invalid
+    
+    r == h
 }
 
 /// Simple function to tell the user about appropriate usage and exit with exit code 1.
@@ -258,7 +247,7 @@ fn print_usage_and_exit() {
 /// command line arguments.  If all arguments are good, call the correct
 /// function.
 
-fn args_good(args: Vec<String>) -> Result<Function, String> {
+fn args_good(args: &Vec<String>) -> Result<Function, String> {
 
     // ignore "0 arg", i.e. the executable name itself.
     // This means that all argument lengths here are "one more" than you
@@ -303,7 +292,7 @@ fn args_good(args: Vec<String>) -> Result<Function, String> {
 
 }
 
-fn print_keys(n: u32, d: u32, e: u32) {
+fn print_keys(n: BigInt, d: BigInt, e: BigInt) {
     println!("Private key: {}, {}", n, d);
     println!("Public key: {}, {}", n, e);
 }
@@ -316,7 +305,7 @@ fn main() {
         args.push(argument);
     }
 
-    let args_ok = args_good(args);
+    let args_ok = args_good(&args);
     match args_ok {
         Ok(f) => {
             match f {
@@ -326,14 +315,25 @@ fn main() {
                     print_keys(n, d, e);
                 },
                 Function::Sign => {
-                    // sign_message(args[2], args[3], args[4]);
+                    let msg: String = args[2].clone();
+                    let priv_key_mod = args[3].parse::<BigInt>().unwrap();
+                    let priv_key_exp = args[4].parse::<BigInt>().unwrap();
+                    let sig = sign_message(msg, priv_key_mod, priv_key_exp);
+                    println!("Signature: {}", sig);
                 },
                 Function::Verify => {
-                    // verify_signature(args[2], args[3], args[4], args[5]);
+                    let msg: String = args[2].clone();
+                    let sig = args[3].parse::<BigInt>().unwrap();
+                    let pub_key_mod = args[4].parse::<BigInt>().unwrap();
+                    let pub_key_exp = args[5].parse::<BigInt>().unwrap();
+
+                    let r = verify_signature(msg, sig, pub_key_mod, pub_key_exp);
+                    match r {
+                        true => { println!("Signature verified!"); }
+                        false => { println!("SIGNATURE INVALID!"); }
+                    }
                 },
             }
-            // let a = rand::random::<u32>();
-            // println!("{:#034x}", a);
         },
         Err(e) => {
             println!("Error: {}", e);
@@ -341,6 +341,10 @@ fn main() {
         },
     }
 }
+
+// Sample values for your own testing
+// Private key: 2567355503, 190339441 (mod, exp)
+// Public key: 2567355503, 643681741 (mod, exp)
 
 #[cfg(test)]
 mod tests {
@@ -399,5 +403,3 @@ mod tests {
 
     
 }
-
-
