@@ -1,5 +1,9 @@
-extern crate crypto;
+extern crate num_bigint;
+extern crate num_traits;
 
+use num_bigint::BigUint;
+use std::mem::replace;
+use num_traits::cast::ToPrimitive;
 
 use rand::prelude::*;
 use std::env;
@@ -10,14 +14,10 @@ use modpow::*;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-
-use self::crypto::digest::Digest;
-use self::crypto::sha2::Sha256;
-
 // Our two keys can not be higher than this value
 // This makes cracking the code relatively simple, but frees us
 // from having to use bigint everywhere for multiplication!
-const MAX_KEY_VAL: u32 = 65_536;
+const MAX_KEY_VAL: u32 = 100;
 
 // The different functions supported by the program -
 // 1. Generate a keypair
@@ -48,7 +48,7 @@ fn is_prime(n: u32) -> bool {
 
     let mut i = 5;
 
-    while (i * i <= n) {
+    while i * i <= n {
         if n % i == 0 || n % (i + 2) == 0 {
             return false;
         }
@@ -67,7 +67,7 @@ fn is_prime(n: u32) -> bool {
 fn get_random_prime(rng: &mut rand::prelude::ThreadRng) -> u32 {
 
     // Generate a random 16-bit unsigned integer.
-    let mut p: u32 = 0; 
+    let mut p: u32; 
 
     // Keep generating random numbers and putting them in `p` until
     // the generated number is found to be prime.
@@ -117,21 +117,6 @@ fn generate_two_primes(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32) {
     (p, q)
 }
 
-
-fn mod_inv(a: isize, module: isize) -> isize {
-  let mut mn = (module, a);
-  let mut xy = (0, 1);
- 
-  while mn.1 != 0 {
-    xy = (xy.1, xy.0 - (mn.0 / mn.1) * xy.1);
-    mn = (mn.1, mn.0 % mn.1);
-  }
- 
-  while xy.0 < 0 {
-    xy.0 += module;
-  }
-  xy.0
-}
 
 // Modular multiplicative inverse code based on Rosetta Code's MMI code:
 // https://rosettacode.org/wiki/Modular_inverse#Rust
@@ -189,40 +174,52 @@ fn get_hash<T: Hash>(t: &T) -> u32 {
 }
 
 
-fn sign_message(msg: String, priv_key_mod: BigInt, priv_key_exp: BigInt) -> BigInt {
+fn sign_message(msg: String, priv_key_mod: u32, priv_key_exp: u32) -> u32 {
     // TODO
 
     // Step 1: Produce a hash value of the message.
     let h = get_hash(&msg);
+
+    let h_biguint: BigUint = BigUint::from(h);
     
     // Step 2: Raise it to the power of d, modulo n.
-    let r  = modpow(&h, &priv_key_exp, &priv_key_mod);
+    let r  = h_biguint.modpow(&BigUint::from(priv_key_exp),
+                              &BigUint::from(priv_key_mod));
 
-    r
+    println!("msg: {}\n\nmod: {}\nexp: {}\nhash: {}\nr: {}",
+             msg, priv_key_mod, priv_key_exp, h, r);
+
+    
+    r.to_u32().unwrap()
     
 }
 
-fn verify_signature(msg: String, sig: BigInt, pub_key_mod: BigInt, pub_key_exp: BigInt) -> bool {
+fn verify_signature(msg: String, sig: u32, pub_key_mod: u32, pub_key_exp: u32) -> bool {
 
     // Step 1: Get the hash value of the message.
     let h = get_hash(&msg);
-  
-    // Step 2: Raise it to the power of e modulo n.
-    let r  = modpow(&h, &pub_key_exp, &pub_key_mod);
 
-    // Step 3: Compare the computed value in step 2 to the original hash
-    //         calculated in Step 1.  If they match, the signature is valid.
-    //         If not, it is invalid
+    let h_biguint: BigUint = BigUint::from(h);
+
+    // Step 2: Raise it to the power of e modulo n.
+    let r  = h_biguint.modpow(&BigUint::from(pub_key_exp),
+                              &BigUint::from(pub_key_mod));
+
+
+    println!("msg: {}\nsig: {}\nmod: {}\nexp: {}\nhash: {}\nr: {}",
+             msg, sig, pub_key_mod, pub_key_exp, h, r);
     
-    r == h
+    r.to_u32().unwrap() == sig
 }
 
 
 fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) {
     // TODO
     // Step 1: Choose two distinct prime numbers, p and q
-    let (p, q) = generate_two_primes(&mut rng);
-
+    // let (p, q) = generate_two_primes(&mut rng);
+    let p = 787;
+    let q = 797;
+    
     // Step 2: Compute m = p * q (will be the modulus)
     let m = p * q;
 
@@ -242,48 +239,16 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     // if (d * e) % n != 1 {
     //     panic!("Error: (d * e) % n != 1");
     // }
+
+    println!("p: {}\nq: {}\nmod: {}\nC-tot (n): {}\npriv: {}\npub: {}",
+             p, q, m, n, e, d);
+
     
     // Return a three-tuple with the following elements:
     // 1. Modulus (m)
-    // 2. Private Exponent (d)
-    // 3. Public Exponent (e)
-    (m, d, e)
-}
-
-// fn hash(msg: String) -> u32 {
-
-// }
-    
-
-fn sign_message(msg: String, priv_key_mod: u32, priv_key_exp: u32) -> u32 {
-    // TODO
-
-    // Step 1: Produce a hash value of the message.
-// create a Sha256 object
-// let mut hasher = Sha256::new();
-
-// // write input message
-// hasher.input_str("hello world");
-
-// // read hash digest
-// let hex = hasher.result_str();
-    
-
-    // Step 2: Raise it to the power of d, modulo n.
-
-    1
-}
-
-fn verify_signature(msg: String, sig: String, pub_key_mod: u32, pub_key_exp: u32) -> bool {
-
-    // Step 1: Get the hash value of the message.
-
-    // Step 2: Raise it to the power of e modulo n.
-
-    // Step 3: Compare the computed value in step 2 to the original hash
-    //         calculated in Step 1.  If they match, the signature is valid.
-    //         If not, it is invalid.
-    false
+    // 2. Private Exponent (e)
+    // 3. Public Exponent (d)
+    (m, e, d)
 }
 
 /// Simple function to tell the user about appropriate usage and exit with exit code 1.
@@ -301,7 +266,7 @@ fn print_usage_and_exit() {
 /// command line arguments.  If all arguments are good, call the correct
 /// function.
 
-fn args_good(args: Vec<String>) -> Result<Function, String> {
+fn args_good(args: &Vec<String>) -> Result<Function, String> {
 
     // ignore "0 arg", i.e. the executable name itself.
     // This means that all argument lengths here are "one more" than you
@@ -359,20 +324,34 @@ fn main() {
         args.push(argument);
     }
 
-    let args_ok = args_good(args);
+    let args_ok = args_good(&args);
     match args_ok {
         Ok(f) => {
             match f {
                 Function::Generate => {
                     let mut rng = rand::thread_rng();
-                    let (n, d, e) = generate_key_pair(&mut rng);
-                    print_keys(n, d, e);
+                    let (m, d, e) = generate_key_pair(&mut rng);
+                    print_keys(m, d, e);
                 },
                 Function::Sign => {
-                    // sign_message(args[2], args[3], args[4]);
+                    let msg: String = args[2].clone();
+                    let priv_key_mod = args[3].parse::<u32>().unwrap();
+                    let priv_key_exp = args[4].parse::<u32>().unwrap();
+                    let sig = sign_message(msg, priv_key_mod, priv_key_exp);
+                    println!("Signature: {}", sig);
                 },
                 Function::Verify => {
-                    // verify_signature(args[2], args[3], args[4], args[5]);
+                    let msg: String = args[2].clone();
+                    let sig = args[3].parse::<u32>().unwrap();
+                    let pub_key_mod = args[4].parse::<u32>().unwrap();
+                    let pub_key_exp = args[5].parse::<u32>().unwrap();
+
+                    let r = verify_signature(msg, sig, pub_key_mod, pub_key_exp);
+                    match r {
+                        true => { println!("Signature verified!"); }
+                        false => { println!("SIGNATURE INVALID!"); }
+                    }
+
                 },
             }
             // let a = rand::random::<u32>();
@@ -384,6 +363,10 @@ fn main() {
         },
     }
 }
+
+// Private key: 1258029907, 47403211
+// Public key: 1258029907, 24445691
+// Signature "meow" = 891149237
 
 #[cfg(test)]
 mod tests {
