@@ -12,7 +12,7 @@ use std::hash::{Hash, Hasher};
 // Our two keys can not be higher than this value
 // This makes cracking the code relatively simple, but frees us
 // from having to use bigint everywhere for multiplication!
-const MAX_KEY_VAL: u32 = 100;
+const MAX_KEY_VAL: u32 = 65536;
 
 // The different functions supported by the program -
 // 1. Generate a keypair
@@ -172,10 +172,14 @@ fn get_hash<T: Hash>(t: &T) -> u32 {
 fn sign_message(msg: String, priv_key_mod: u32, priv_key_exp: u32) -> u32 {
     // TODO
 
+
+    
     // Step 1: Produce a hash value of the message.
     let h = get_hash(&msg);
 
     let h_biguint: BigUint = BigUint::from(h);
+
+    println!("h: {} / h_big: {}", h, h_biguint);
     
     // Step 2: Raise it to the power of d, modulo n.
     let r  = h_biguint.modpow(&BigUint::from(priv_key_exp),
@@ -191,20 +195,36 @@ fn sign_message(msg: String, priv_key_mod: u32, priv_key_exp: u32) -> u32 {
 
 fn verify_signature(msg: String, sig: u32, pub_key_mod: u32, pub_key_exp: u32) -> bool {
 
+    
+    
     // Step 1: Get the hash value of the message.
     let h = get_hash(&msg);
 
-    let h_biguint: BigUint = BigUint::from(h);
+    // let h_biguint: BigUint = BigUint::from(h);
 
+    let s_biguint: BigUint = BigUint::from(sig);
+        
     // Step 2: Raise it to the power of e modulo n.
-    let r  = h_biguint.modpow(&BigUint::from(pub_key_exp),
+    let r  = s_biguint.modpow(&BigUint::from(pub_key_exp),
                               &BigUint::from(pub_key_mod));
 
 
     println!("msg: {}\nsig: {}\nmod: {}\nexp: {}\nhash: {}\nr: {}",
              msg, sig, pub_key_mod, pub_key_exp, h, r);
-    
-    r.to_u32().unwrap() == sig
+
+    r.to_u32().unwrap() == h % pub_key_mod
+}
+
+fn check_vals(d: u32, e: u32, n: u32) {
+    let bd = BigUint::from(d);
+    let be = BigUint::from(e);
+    let bn = BigUint::from(n);
+    let one = BigUint::from(1 as u32);
+    if (bd * be) % bn != one {
+        panic!("Error: (d * e) % n != 1");
+    } else {
+        println!("all is good");
+    }
 }
 
 
@@ -212,7 +232,8 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     // TODO
     // Step 1: Choose two distinct prime numbers, p and q
     let (p, q) = generate_two_primes(&mut rng);
-    
+    // let p = 7;
+    // let q = 9;
     // Step 2: Compute m = p * q (will be the modulus)
     let m = p * q;
 
@@ -229,9 +250,7 @@ fn generate_key_pair(mut rng: &mut rand::prelude::ThreadRng) -> (u32, u32, u32) 
     // Step 6: Perform a sanity check before returning.
     //         Verify that d * e = 1 modulo n.
     //         If it does not, panic!
-    // if (d * e) % n != 1 {
-    //     panic!("Error: (d * e) % n != 1");
-    // }
+    check_vals(d, e, n);
 
     println!("p: {}\nq: {}\nmod: {}\nC-tot (n): {}\npriv: {}\npub: {}",
              p, q, m, n, e, d);
