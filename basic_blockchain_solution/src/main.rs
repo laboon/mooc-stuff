@@ -236,11 +236,16 @@ fn verify_blockchain(blockchain: &Vec<Block>) -> Result<HashMap<Address, Amount>
         // to_address has gained an equivalent number of billcoins.
         // No coins should ever be subtracted from the 0x0 address
 
-        let old_balance_from = balances.get(&b.from_addr).unwrap_or(&0);
-        let old_balance_to = balances.get(&b.to_addr).unwrap_or(&0);
+        let old_balance_from = balances.get(&b.from_addr).cloned().unwrap_or(0);
+        println!("{:?}", old_balance_from);
+        let old_balance_to = balances.get(&b.to_addr).cloned().unwrap_or(0);
+        println!("{:?}", old_balance_to);
+        
         if b.from_addr != 0 {
-            balances.insert(b.from_addr, old_balance_from - b.amount);
+            let new_from_amount = old_balance_from - b.amount;
+            balances.insert(b.from_addr, new_from_amount);
         }
+        let new_to_amount = old_balance_to + b.amount;
         balances.insert(b.to_addr, old_balance_to + b.amount);
         
     }
