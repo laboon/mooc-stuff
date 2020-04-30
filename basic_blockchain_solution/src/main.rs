@@ -42,28 +42,34 @@ fn pretty_print_block(b: &Block) {
            b.prev_hash);
 }
 
-fn generate_block(from_addr: u64,
-                  to_addr: u64,
-                  amount: u64,
-                  prev_hash: u64) -> Block {
-    let new_block = Block {
-        from_addr: from_addr,
-        to_addr: to_addr,
-        amount: amount,
-        prev_hash: prev_hash
-    };
-    new_block
-}
+// fn generate_block(from_addr: u64,
+//                   to_addr: u64,
+//                   amount: u64,
+//                   prev_hash: u64) -> Block {
+//     let new_block = Block {
+//         from_addr: from_addr,
+//         to_addr: to_addr,
+//         amount: amount,
+//         prev_hash: prev_hash
+//     };
+//     new_block
+// }
 
-fn pretty_print_blockchain(bc: Vec<Block>) {
+fn print_blockchain(bc: Vec<Block>) {
     for (j, b) in bc.iter().enumerate() {
-        println!("Block {}: {} gave {} to {} (Prev Hash: {})",
+        println!("{},{:#016x},{},{:#016x},{:#016x}",
                  j,
                  b.from_addr,
                  b.amount,
                  b.to_addr,
                  b.prev_hash);
         
+    }
+}
+
+fn print_results(results: HashMap<u64, u64>) {
+    for (address, amount) in &results {
+        println!("{} : {} billcoins", address, amount);
     }
 }
 
@@ -78,45 +84,86 @@ fn verify_file() -> Result<HashMap<u64, u64>, String> {
     Err("derp".to_string())
 }
 
-fn read_blockchain(f: String) {
-    
+fn read_blockchain(f: String) -> Result<HashMap<u64, u64>, String> {
+    Err("derp".to_string())
 }
 
-fn convert_string_to_hex(x: String) -> u64 {
+fn convert_hex(x: String) -> u64 {
     let num = x.trim_start_matches("0x");
     u64::from_str_radix(num, 16).unwrap()
 }
                              
+fn convert_decimal(x: String) -> u64 {
+    u64::from_str_radix(&x, 10).unwrap()
+}
 
-fn make_blockchain() -> Vec<Block> {
+fn get_block_info(prev_hash: u64) -> Option<Block> {
     let mut to_addr: String = String::new();
     let mut from_addr: String = String::new();
     let mut amount: String = String::new();
 
+    print!("From address (hex) > ");
+    let _ = io::stdout().flush();
+    io::stdin().read_line(&mut from_addr).unwrap();
+    from_addr = from_addr.trim().to_string();
+    if from_addr == "x" {
+        return None
+    }
+    print!("To address (hex) > ");
+    let _ = io::stdout().flush();
+    io::stdin().read_line(&mut to_addr).expect("Error");
+    to_addr = to_addr.trim().to_string();
+    
+    print!("Amount > ");
+    let _ = io::stdout().flush();
+    io::stdin().read_line(&mut amount).expect("Error");
+    amount = amount.trim().to_string();
+
+    // Generate block from input
+
+    let b = Block {
+        to_addr: convert_hex(to_addr),
+        from_addr: convert_hex(from_addr),
+        amount: convert_decimal(amount),
+        prev_hash: prev_hash
+    };
+
+    Some(b)
+        
+}
+fn make_blockchain() -> Vec<Block> {
+    let mut prev_hash = 0;
+    
     let mut blockchain: Vec<Block> = Vec::new();
     let mut cont = true;
 
     let mut block_num = 0;
     while (cont) {
         println!("Block Number: {}", block_num);
-        println!("From address (hex) > ");
-        io::stdin().read_line(&mut from_addr).unwrap();
-        from_addr = from_addr.trim().to_string();
-        if from_addr == "x" {
-            cont = false;
-            break;
-        }
-        println!("To address (hex) > ");
-        io::stdin().read_line(&mut to_addr).expect("Error");
-        println!("Amount > ");
-        io::stdin().read_line(&mut amount).expect("Error");
+        
+        let block_option = get_block_info(prev_hash);
+        match block_option {
+            Some(b) => {
+                // Get hash of this block to use as prev_hash for
+                // NEXT block
+                prev_hash = get_hash(&b);
 
-        to_addr = "".to_string();
-        from_addr = "".to_string();
-        amount = "".to_string();
+                // Add block to blockchain
+                blockchain.push(b);
+            },
+            None => {
+                // Stop collecting blocks from user
+                break;
+            }
+        }
+        
+        // // Reset strings.  Otherwise, read_line will concatenate
+        // // strings from iteration to iteration of the loop.
+        // to_addr = "".to_string();
+        // from_addr = "".to_string();
+        // amount = "".to_string();
 
         block_num = block_num + 1;
-        
 
     }
 
@@ -134,11 +181,23 @@ fn main() {
 
     let args_count = env::args().count();
     if args_count <= 1 {
-        make_blockchain();
+        let blockchain = make_blockchain();
+        print_blockchain(blockchain);
     } else if args_count == 2 {
         // Note: we know this element exists, otherwise we would
         // have to worry about unwrap() panicking
-        read_blockchain(env::args().nth(1).unwrap());
+        let valid = read_blockchain(env::args().nth(1).unwrap());
+        match valid {
+            Ok(bc) => {
+                print_results(bc);
+                println!("Blockchain valid!");
+            },
+            Err(e) => {
+                println!("Blockchain invalid: {}", e);
+            }
+        } 
+            
+          
     } else {
         print_usage_and_exit();
     }
